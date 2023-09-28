@@ -1,4 +1,3 @@
-import sympy
 from django.db import models
 
 
@@ -21,14 +20,3 @@ class Cell(models.Model):
 
     def __str__(self):
         return f'{self.sheet.sheet_id}/{self.cell_id}'
-    
-    def save(self, *args, **kwargs):
-        if self.value.startswith('='):
-            try:
-                expr = sympy.sympify(self.value[1:])
-                self.result = str(expr.evalf())
-            except (sympy.SympifyError, ValueError):
-                self.result = 'ERROR'
-        else:
-            self.result = self.value
-        super().save(*args, **kwargs)
