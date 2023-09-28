@@ -2,7 +2,7 @@ import sympy
 from rest_framework import generics, status
 from rest_framework.response import Response
 from .models import Cell, Sheet
-from .serializers import CellSerializer, SheetSerializer
+from .serializers import CellCreateSerializer, CellSerializer, SheetSerializer
 
 
 class CellCreateRetrieveView(generics.GenericAPIView):
@@ -23,7 +23,7 @@ class CellCreateRetrieveView(generics.GenericAPIView):
         else:
             return value
 
-    def get(self, sheet_id, cell_id):
+    def get(self, request, sheet_id, cell_id):
         try:
             cell = Cell.objects.get(sheet__sheet_id__iexact=sheet_id, cell_id__iexact=cell_id)
             serializer = self.serializer_class(cell)
@@ -32,10 +32,10 @@ class CellCreateRetrieveView(generics.GenericAPIView):
             return Response({'detail': 'Cell not found'}, status=status.HTTP_404_NOT_FOUND)
     
     def post(self, request, sheet_id, cell_id):
-        data = request.data
-        data['sheet'] = sheet_id
-        data['cell_id'] = cell_id
-        serializer = self.serializer_class(data=data)
+        data = {"value": request.data.get("value")}
+        data["sheet"] = sheet_id
+        data["cell_id"] = cell_id
+        serializer = CellCreateSerializer(data=data)
         
         if serializer.is_valid():
             if self.detect_circular_dependency(sheet_id, cell_id, data['value']):
@@ -56,7 +56,7 @@ class CellCreateRetrieveView(generics.GenericAPIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
-    def detect_circular_dependency(self, sheet_id, cell_id):
+    def detect_circular_dependency(self, sheet_id, cell_id, value):
         visited_cells = set()
         stack = [(sheet_id, cell_id)]
 

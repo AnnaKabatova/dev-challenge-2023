@@ -2,10 +2,14 @@ from rest_framework import serializers
 from .models import Cell, Sheet
 
 
+class CellCreateSerializer(serializers.Serializer):
+    value = serializers.CharField()
+
+
 class CellSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cell
-        fields = ['cell_id', 'sheet', 'value', 'result']
+        fields = '__all__'
 
 class SheetSerializer(serializers.ModelSerializer):
     cells = CellSerializer(many=True, read_only=True)
