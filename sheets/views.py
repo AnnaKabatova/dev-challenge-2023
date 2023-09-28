@@ -1,3 +1,4 @@
+import sympy
 from rest_framework import generics, status
 from rest_framework.response import Response
 from .models import Cell, Sheet
@@ -7,6 +8,21 @@ from .serializers import CellSerializer, SheetSerializer
 class CellCreateRetrieveView(generics.GenericAPIView):
     serializer_class = CellSerializer
     
+    def calculate_cell_result(self, value):
+        if not isinstance(value, (str, int, float)):
+            return 'ERROR: Invalid data type'
+
+        if value.startswith('='):
+            try:
+                expr = sympy.sympify(value[1:])
+                if expr.has(sympy.zoo):
+                    return 'ERROR: Division by zero'
+                return str(expr.evalf())
+            except (sympy.SympifyError, ValueError):
+                return 'ERROR: Invalid mathematical expression'
+        else:
+            return value
+
     def get(self, sheet_id, cell_id):
         try:
             cell = Cell.objects.get(sheet__sheet_id__iexact=sheet_id, cell_id__iexact=cell_id)
@@ -18,25 +34,52 @@ class CellCreateRetrieveView(generics.GenericAPIView):
     def post(self, request, sheet_id, cell_id):
         data = request.data
         data['sheet'] = sheet_id
-        data['cell_id'] = cell_id  # Ensure cell_id is set for create/update
+        data['cell_id'] = cell_id
         serializer = self.serializer_class(data=data)
         
         if serializer.is_valid():
+            if self.detect_circular_dependency(sheet_id, cell_id, data['value']):
+                return Response({'error': 'Circular dependency detected'}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
             cell, created = Cell.objects.get_or_create(
                 sheet__sheet_id__iexact=sheet_id,
                 cell_id__iexact=cell_id,
                 defaults={'value': data['value']}
             )
-            
+
             if not created:
                 cell.value = data['value']
-                cell.save()
-            
+
+            cell.result = self.calculate_cell_result(data['value'])
+
+            cell.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
+    def detect_circular_dependency(self, sheet_id, cell_id):
+        visited_cells = set()
+        stack = [(sheet_id, cell_id)]
 
-I
+        while stack:
+            current_sheet, current_cell = stack.pop()
+            visited_cells.add((current_sheet, current_cell))
+
+            try:
+                cell = Cell.objects.get(sheet__sheet_id__iexact=current_sheet, cell_id__iexact=current_cell)
+                cell_value = cell.value
+            except Cell.DoesNotExist:
+                continue
+
+            if cell_value.startswith('='):
+                cell_references = sympy.symbols(cell_value[1:])
+                for ref in cell_references:
+                    ref_sheet, ref_cell = ref.split('_')
+                    if (ref_sheet.lower(), ref_cell.lower()) == (sheet_id.lower(), cell_id.lower()):
+                        return True
+
+                    if (ref_sheet.lower(), ref_cell.lower()) not in visited_cells:
+                        stack.append((ref_sheet.lower(), ref_cell.lower()))
+        return False
 
 
 class SheetRetrieveView(generics.RetrieveAPIView):
