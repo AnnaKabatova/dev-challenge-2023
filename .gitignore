@@ -1,0 +1,40 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.egg-info/
+dist/
+build/
+*.sqlite3
+
+# Virtual Environment
+venv/
+env/
+env_*/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor-specific files
+.idea/
+.vscode/
+*.sublime-*
+
+# Logs
+log/
+
+# Compiled Python files
+*.pyc
+
+# Database
+*.sqlite3
+
+# Static files
+/static/
+
+# Media files
+/media/
+
+# Environment variables
+.env
