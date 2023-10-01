@@ -1,19 +1,17 @@
 from rest_framework import serializers
-from .models import Cell, Sheet
+from .models import Spreadsheet, Cell
 
 
-class CellCreateSerializer(serializers.Serializer):
-    value = serializers.CharField()
+class SpreadsheetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Spreadsheet
+        fields = '__all__'
 
 
 class CellSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cell
-        fields = '__all__'
-
-class SheetSerializer(serializers.ModelSerializer):
-    cells = CellSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Sheet
-        fields = ['sheet_id', 'cells']
+        fields = ['value', 'result']
+        extra_kwargs = {
+            'result': {'required': False}
+        }
