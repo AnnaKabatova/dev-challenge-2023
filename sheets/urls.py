@@ -1,9 +1,10 @@
 from django.urls import path
-from . import views
+
+from .views import cell_create_retrieve, sheet_data
 
 urlpatterns = [
-    path('<str:sheet_id>/<str:cell_id>/', views.CellCreateRetrieveView.as_view()),
-    path('<str:sheet_id>/', views.SheetRetrieveView.as_view()),
+    path('<sheet_id>/<cell_id>/', cell_create_retrieve),
+    path('<sheet_id>/', sheet_data),
 ]
 
 app_name = 'sheets'
