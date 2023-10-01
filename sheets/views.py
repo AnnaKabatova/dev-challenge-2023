@@ -7,7 +7,6 @@ from rest_framework.response import Response
 from .models import Spreadsheet, Cell
 from .serializers import CellSerializer
 
-cell_id_regex = re.compile(r'^[a-zA-Z]+\d+$')
 
 def calculate_formula(formula, spreadsheet):
     try:
@@ -38,9 +37,6 @@ def calculate_formula(formula, spreadsheet):
 
 @api_view(['GET', 'POST'])
 def cell_create_retrieve(request, sheet_id, cell_id):
-    if not cell_id_regex.match(cell_id):
-        return Response('Invalid cell ID', status=status.HTTP_400_BAD_REQUEST)
-
     try:
         spreadsheet, created = Spreadsheet.objects.get_or_create(id=sheet_id, defaults={'datastore': {}})
     except Exception as e:
@@ -87,7 +83,7 @@ def sheet_data(request, sheet_id):
     data = {}
 
     for cell in cells:
-        data[cell.id] = {
+        data[cell.cell_id] = {
             'value': cell.value,
             'result': cell.result
         }
