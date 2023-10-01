@@ -1,102 +1,95 @@
-import sympy
-from rest_framework import generics, status
+import re
+
+from rest_framework import status
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import Cell, Sheet
-from .serializers import CellCreateSerializer, CellSerializer, SheetSerializer
 
+from .models import Spreadsheet, Cell
+from .serializers import CellSerializer
 
-class CellCreateRetrieveView(generics.GenericAPIView):
-    serializer_class = CellSerializer
-    
-    def calculate_cell_result(self, value):
-        if not isinstance(value, (str, int, float)):
-            return 'ERROR: Invalid data type'
+cell_id_regex = re.compile(r'^[a-zA-Z]+\d+$')
 
-        if value.startswith('='):
+def calculate_formula(formula, spreadsheet):
+    try:
+        variable_names = re.findall(r'[a-zA-Z]+\d+', formula)
+
+        variable_values = []
+        variable_not_found = []
+
+        for var_name in variable_names:
             try:
-                expr = sympy.sympify(value[1:])
-                if expr.has(sympy.zoo):
-                    return 'ERROR: Division by zero'
-                return str(expr.evalf())
-            except (sympy.SympifyError, ValueError):
-                return 'ERROR: Invalid mathematical expression'
+                cell = Cell.objects.get(cell_id=var_name, spreadsheet=spreadsheet)
+                variable_values.append(cell.value)
+            except Cell.DoesNotExist:
+                variable_not_found.append(var_name)
+
+        if variable_not_found:
+            return f'ERROR: Variables not found: {", ".join(variable_not_found)}'
+
+        for var_name, value in zip(variable_names, variable_values):
+            formula = formula.replace(var_name, str(value))
+
+        result = str(eval(formula))
+
+        return result
+    except (SyntaxError, NameError, ValueError) as e:
+        return 'ERROR'
+
+
+@api_view(['GET', 'POST'])
+def cell_create_retrieve(request, sheet_id, cell_id):
+    if not cell_id_regex.match(cell_id):
+        return Response('Invalid cell ID', status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        spreadsheet, created = Spreadsheet.objects.get_or_create(id=sheet_id, defaults={'datastore': {}})
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    try:
+        cell = Cell.objects.get(spreadsheet=spreadsheet, cell_id=cell_id)
+    except Cell.DoesNotExist:
+        cell = Cell(spreadsheet=spreadsheet, cell_id=cell_id)
+
+    if request.method == 'POST':
+        data = {'value': request.data.get('value')}
+
+        if data['value'].startswith('='):
+            try:
+                result = calculate_formula(data['value'][1:], spreadsheet)
+                data['result'] = result
+            except Exception as e:
+                data['result'] = 'ERROR'
         else:
-            return value
+            data['result'] = data['value']
 
-    def get(self, request, sheet_id, cell_id):
-        try:
-            cell = Cell.objects.get(sheet__sheet_id__iexact=sheet_id, cell_id__iexact=cell_id)
-            serializer = self.serializer_class(cell)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Cell.DoesNotExist:
-            return Response({'detail': 'Cell not found'}, status=status.HTTP_404_NOT_FOUND)
-    
-    def post(self, request, sheet_id, cell_id):
-        data = {"value": request.data.get("value")}
-        data["sheet"] = sheet_id
-        data["cell_id"] = cell_id
-        serializer = CellCreateSerializer(data=data)
-        
+        serializer = CellSerializer(data=data)
+
         if serializer.is_valid():
-            if self.detect_circular_dependency(sheet_id, cell_id, data['value']):
-                return Response({'error': 'Circular dependency detected'}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
-
-            cell, created = Cell.objects.get_or_create(
-                sheet__sheet_id__iexact=sheet_id,
-                cell_id__iexact=cell_id,
-                defaults={'value': data['value']}
-            )
-
-            if not created:
-                cell.value = data['value']
-
-            cell.result = self.calculate_cell_result(data['value'])
-
-            cell.save()
+            serializer.save(spreadsheet=spreadsheet, cell_id=cell_id)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
-
-    def detect_circular_dependency(self, sheet_id, cell_id, value):
-        visited_cells = set()
-        stack = [(sheet_id, cell_id)]
-
-        while stack:
-            current_sheet, current_cell = stack.pop()
-            visited_cells.add((current_sheet, current_cell))
-
-            try:
-                cell = Cell.objects.get(sheet__sheet_id__iexact=current_sheet, cell_id__iexact=current_cell)
-                cell_value = cell.value
-            except Cell.DoesNotExist:
-                continue
-
-            if cell_value.startswith('='):
-                cell_references = sympy.symbols(cell_value[1:])
-                for ref in cell_references:
-                    ref_sheet, ref_cell = ref.split('_')
-                    if (ref_sheet.lower(), ref_cell.lower()) == (sheet_id.lower(), cell_id.lower()):
-                        return True
-
-                    if (ref_sheet.lower(), ref_cell.lower()) not in visited_cells:
-                        stack.append((ref_sheet.lower(), ref_cell.lower()))
-        return False
+    elif request.method == 'GET':
+        serializer = CellSerializer(cell)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    else:
+        return Response({'error': 'Unsupported HTTP method'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class SheetRetrieveView(generics.RetrieveAPIView):
-    serializer_class = SheetSerializer
-    queryset = Sheet.objects.all()
-    
-    def retrieve(self, request, *args, **kwargs):
-        sheet_id = self.kwargs.get('sheet_id', '').lower()
+@api_view(['GET'])
+def sheet_data(request, sheet_id):
+    try:
+        spreadsheet = Spreadsheet.objects.get(id=sheet_id)
+    except Spreadsheet.DoesNotExist:
+        return Response('Spreadsheet not found', status=status.HTTP_404_NOT_FOUND)
 
-        try:
-            sheet = Sheet.objects.get(sheet_id__iexact=sheet_id)
-        except Sheet.DoesNotExist:
-            return Response({'detail': 'Sheet not found'}, status=status.HTTP_404_NOT_FOUND)
+    cells = Cell.objects.filter(spreadsheet=spreadsheet).order_by('cell_id')
+    data = {}
 
-        cells = Cell.objects.filter(sheet=sheet)
-        serialized_cells = CellSerializer(cells, many=True).data
+    for cell in cells:
+        data[cell.id] = {
+            'value': cell.value,
+            'result': cell.result
+        }
 
-        response_data = {cell.cell_id: cell for cell in serialized_cells}
-
-        return Response(response_data, status=status.HTTP_200_OK)
+    return Response(data, status=status.HTTP_200_OK)
