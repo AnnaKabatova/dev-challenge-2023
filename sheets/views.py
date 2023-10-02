@@ -17,7 +17,7 @@ def calculate_formula(formula, spreadsheet):
 
         for var_name in variable_names:
             try:
-                cell = Cell.objects.get(cell_id=var_name, spreadsheet=spreadsheet)
+                cell = Cell.get_by_cell_id(cell_id=var_name, spreadsheet=spreadsheet)
                 variable_values.append(cell.value)
             except Cell.DoesNotExist:
                 variable_not_found.append(var_name)
@@ -38,12 +38,14 @@ def calculate_formula(formula, spreadsheet):
 @api_view(['GET', 'POST'])
 def cell_create_retrieve(request, sheet_id, cell_id):
     try:
-        spreadsheet, created = Spreadsheet.objects.get_or_create(id=sheet_id, defaults={'datastore': {}})
+        spreadsheet = Spreadsheet.get_by_id(id=sheet_id)
+    except Spreadsheet.DoesNotExist:
+        spreadsheet = Spreadsheet.objects.create(id=sheet_id)
     except Exception as e:
         return Response(str(e), status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
     try:
-        cell = Cell.objects.get(spreadsheet=spreadsheet, cell_id=cell_id)
+        cell = Cell.get_by_cell_id(spreadsheet=spreadsheet, cell_id=cell_id)
     except Cell.DoesNotExist:
         cell = Cell(spreadsheet=spreadsheet, cell_id=cell_id)
 
@@ -75,7 +77,7 @@ def cell_create_retrieve(request, sheet_id, cell_id):
 @api_view(['GET'])
 def sheet_data(request, sheet_id):
     try:
-        spreadsheet = Spreadsheet.objects.get(id=sheet_id)
+        spreadsheet = Spreadsheet.get_by_id(id=sheet_id)
     except Spreadsheet.DoesNotExist:
         return Response('Spreadsheet not found', status=status.HTTP_404_NOT_FOUND)
 
