@@ -38,9 +38,7 @@ def calculate_formula(formula, spreadsheet):
 @api_view(['GET', 'POST'])
 def cell_create_retrieve(request, sheet_id, cell_id):
     try:
-        spreadsheet = Spreadsheet.get_by_id(id=sheet_id)
-    except Spreadsheet.DoesNotExist:
-        spreadsheet = Spreadsheet.objects.create(id=sheet_id)
+        spreadsheet, created = Spreadsheet.objects.get_or_create(id=sheet_id)
     except Exception as e:
         return Response(str(e), status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
