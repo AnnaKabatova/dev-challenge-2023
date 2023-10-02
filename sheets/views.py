@@ -30,7 +30,7 @@ def calculate_formula(formula, spreadsheet):
         result = str(eval(formula))
 
         return result
-    except (SyntaxError, NameError, ValueError) as e:
+    except (SyntaxError, NameError, ValueError):
         return 'ERROR'
 
 
@@ -54,7 +54,7 @@ def cell_create_retrieve(request, sheet_id, cell_id):
             try:
                 result = calculate_formula(data['value'][1:], spreadsheet)
                 data['result'] = result
-            except Exception as e:
+            except Exception:
                 data['result'] = 'ERROR'
         else:
             data['result'] = data['value']
@@ -70,6 +70,7 @@ def cell_create_retrieve(request, sheet_id, cell_id):
         return Response(serializer.data, status=status.HTTP_200_OK)
     else:
         return Response({'error': 'Unsupported HTTP method'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

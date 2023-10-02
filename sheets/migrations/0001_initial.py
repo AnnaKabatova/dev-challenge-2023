@@ -26,7 +26,9 @@ class Migration(migrations.Migration):
                 ('cell_id', models.CharField(max_length=30)),
                 ('value', models.CharField(max_length=255)),
                 ('result', models.CharField(max_length=255)),
-                ('spreadsheet', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='sheets.spreadsheet')),
+                (
+                    'spreadsheet',
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='sheets.spreadsheet')),
             ],
             options={
                 'unique_together': {('spreadsheet', 'cell_id')},

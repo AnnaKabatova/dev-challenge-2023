@@ -6,6 +6,7 @@ from .models import Spreadsheet, Cell
 class SpreadsheetAdmin(admin.ModelAdmin):
     list_display = ('id',)
 
+
 @admin.register(Cell)
 class CellAdmin(admin.ModelAdmin):
     list_display = ('cell_id', 'value', 'result', 'spreadsheet')

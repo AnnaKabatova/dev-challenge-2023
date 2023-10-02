@@ -6,7 +6,9 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'excel.settings')
+
 
 class SpreadsheetAPITest(TestCase):
     def setUp(self):
@@ -18,7 +20,14 @@ class SpreadsheetAPITest(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
 
     def test_create_and_retrieve_cell(self):
-        response = self.client.post(reverse('sheets:cell-create-retrieve', args=['sheet1', 'A1']), {'value': '42'}, format='json')
+        response = self.client.post(
+            reverse(
+                'sheets:cell-create-retrieve',
+                args=['sheet1', 'A1']
+            ),
+            {'value': '42'},
+            format='json'
+        )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         response = self.client.get(reverse('sheets:cell-create-retrieve', args=['sheet1', 'A1']), format='json')
@@ -29,7 +38,14 @@ class SpreadsheetAPITest(TestCase):
         self.client.post(reverse('sheets:cell-create-retrieve', args=['sheet1', 'A1']), {'value': '5'}, format='json')
         self.client.post(reverse('sheets:cell-create-retrieve', args=['sheet1', 'A2']), {'value': '7'}, format='json')
 
-        response = self.client.post(reverse('sheets:cell-create-retrieve', args=['sheet1', 'A3']), {'value': '=A1+A2'}, format='json')
+        response = self.client.post(
+            reverse(
+                'sheets:cell-create-retrieve',
+                args=['sheet1', 'A3']
+            ),
+            {'value': '=A1+A2'},
+            format='json'
+        )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         response = self.client.get(reverse('sheets:cell-create-retrieve', args=['sheet1', 'A3']), format='json')
@@ -38,9 +54,30 @@ class SpreadsheetAPITest(TestCase):
         self.assertEqual(response.data['result'], '12')
 
     def test_sheet_data(self):
-        self.client.post(reverse('sheets:cell-create-retrieve', args=['sheet2', 'A1']), {'value': '1'}, format='json')
-        self.client.post(reverse('sheets:cell-create-retrieve', args=['sheet2', 'A2']), {'value': '2'}, format='json')
-        self.client.post(reverse('sheets:cell-create-retrieve', args=['sheet2', 'A3']), {'value': '=A1+A2'}, format='json')
+        self.client.post(
+            reverse(
+                'sheets:cell-create-retrieve',
+                args=['sheet2', 'A1']
+            ),
+            {'value': '1'},
+            format='json'
+        )
+        self.client.post(
+            reverse(
+                'sheets:cell-create-retrieve',
+                args=['sheet2', 'A2']
+            ),
+            {'value': '2'},
+            format='json'
+        )
+        self.client.post(
+            reverse(
+                'sheets:cell-create-retrieve',
+                args=['sheet2', 'A3']
+            ),
+            {'value': '=A1+A2'},
+            format='json'
+        )
 
         response = self.client.get(reverse('sheets:sheet-data', args=['sheet2']), format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
