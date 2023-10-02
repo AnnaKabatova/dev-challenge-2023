@@ -50,9 +50,9 @@ docker-compose up --build
 - Create admin user
 
 ## How to register
-- Create user at /api/user/register/ endpoint
-- Get user token at /api/user/token/ endpoint
-- Authorize with it on /api/doc/swagger/ or use ModHeader wtih Request header:
+- Create user at /user/ endpoint
+- Get user token at /user/token/ endpoint
+- Authorize with it or use ModHeader with Request header:
 ```
 Header: Authorization
 Value: Bearer <Your access token> 
