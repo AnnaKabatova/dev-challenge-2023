@@ -24,6 +24,20 @@ You can send request in the format {"value": "1"} or {"value": "=A1+B1"} if you 
 - Persists data, ensuring availability between Docker container restarts.
 - Supports JWT authentication.
 
+## Thoughts and Choices
+Here are some thoughts on the choices made during the development of this project:
+- Docker: Docker was chosen to containerize the application and database for easy setup and reproducibility across different environments.
+- Environment Variables: Environment variables are used for sensitive configuration settings, making it easy to manage different configurations for development, testing, and production.
+- PostgreSQL: PostgreSQL was chosen as the database because of its robustness and support for Django.
+
+## Next Steps
+To make this service even better, consider the following next steps:
+- Django Settings: Review and optimize Django settings for security, performance, and scalability.
+- Continuous Integration: Set up a CI/CD pipeline to automate testing and deployment.
+- Frontend: If applicable, integrate a frontend framework or library to create a complete web application.
+- Documentation: Expand the project documentation, including API documentation if it's an API service.
+- Scaling: Plan for scaling the application by considering load balancing and database replication.
+
 ## Getting Started
 
 To get started, you'll need Docker installed on your machine.
