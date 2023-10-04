@@ -30,12 +30,10 @@ def calculate_formula(formula, spreadsheet):
                 formula = formula.replace(var_name, str(value))
 
             result = str(eval(formula))
-
-            return result
         else:
             # The formula contains only numbers and operators, evaluate it directly
             result = str(eval(formula))
-            return result
+        return result
     except (SyntaxError, NameError, ValueError):
         return 'ERROR'
 
