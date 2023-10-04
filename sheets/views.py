@@ -9,26 +9,30 @@ from .serializers import CellSerializer
 
 def calculate_formula(formula, spreadsheet):
     try:
-        variable_names = re.findall(r'[a-zA-Z]+\d+', formula)
+        # Check if the formula contains cell references
+        if re.search(r'[a-zA-Z]+\d+', formula):
+            variable_names = re.findall(r'[a-zA-Z]+\d+', formula)
 
-        variable_values = []
-        variable_not_found = []
+            variable_values = []
+            variable_not_found = []
 
-        for var_name in variable_names:
-            try:
-                cell = Cell.get_by_cell_id(cell_id=var_name, spreadsheet=spreadsheet)
-                variable_values.append(cell.value)
-            except Cell.DoesNotExist:
-                variable_not_found.append(var_name)
+            for var_name in variable_names:
+                try:
+                    cell = Cell.get_by_cell_id(cell_id=var_name, spreadsheet=spreadsheet)
+                    variable_values.append(cell.value)
+                except Cell.DoesNotExist:
+                    variable_not_found.append(var_name)
 
-        if variable_not_found:
-            return f'ERROR: Variables not found: {", ".join(variable_not_found)}'
+            if variable_not_found:
+                return f'ERROR: Variables not found: {", ".join(variable_not_found)}'
 
-        for var_name, value in zip(variable_names, variable_values):
-            formula = formula.replace(var_name, str(value))
+            for var_name, value in zip(variable_names, variable_values):
+                formula = formula.replace(var_name, str(value))
 
-        result = str(eval(formula))
-
+            result = str(eval(formula))
+        else:
+            # The formula contains only numbers and operators, evaluate it directly
+            result = str(eval(formula))
         return result
     except (SyntaxError, NameError, ValueError):
         return 'ERROR'
