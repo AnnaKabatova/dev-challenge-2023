@@ -7,14 +7,18 @@ This project implements simple excel-alike API with Python and Django Rest Frame
 
 ## Endpoints
 
-Users can interact with the service through the following endpoints:
+Users can interact with the service through the following methods and endpoints:
 
-- POST /api/v1/:sheet_id/:cell_id: Accepts parameters to update or insert data in a cell. It implements an UPSERT strategy, returning a 201 status if successful and a 422 status if there are issues, such as formula errors.
-You can send request in the format {"value": "1"} or {"value": "=A1+B1"} if you want to evaluate the formula (here A1 and B1 are cells names in this spreadsheet).
+1. POST /api/v1/:sheet_id/:cell_id: Accepts parameters to update or insert data in a cell. It implements an UPSERT strategy, returning a 201 status if successful and a 422 status if there are issues, such as formula errors.
 
-- GET /api/v1/:sheet_id/:cell_id: Retrieves data from a specified cell, returning a 200 status if the data is present and a 404 status if it's missing.
+Here are examples of requests (it might be any mathematical expression, including +-*/ and ()):
+- {"value": "1"}
+- {"value": "=A1+B1"} if you want to evaluate the formula (here A1 and B1 are cells names in this spreadsheet)
+- {"value": "2+2"} if you want to evaluate numbers and not cells
 
-- GET /api/v1/:sheet_id: Retrieves data from an entire sheet, returning a 200 status if the sheet exists and a 404 status if it's missing.
+2. GET /api/v1/:sheet_id/:cell_id: Retrieves data from a specified cell, returning a 200 status if the data is present and a 404 status if it's missing.
+
+3. GET /api/v1/:sheet_id: Retrieves data from an entire sheet, returning a 200 status if the sheet exists and a 404 status if it's missing.
 
 ## Supported Features
 
