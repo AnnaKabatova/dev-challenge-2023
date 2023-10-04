@@ -11,10 +11,10 @@ Users can interact with the service through the following methods and endpoints:
 
 1. POST /api/v1/:sheet_id/:cell_id: Accepts parameters to update or insert data in a cell. It implements an UPSERT strategy, returning a 201 status if successful and a 422 status if there are issues, such as formula errors.
 
-Here are examples of requests (it might be any mathematical expression, including +-*/ and ()):
-- {"value": "1"}
-- {"value": "=A1+B1"} if you want to evaluate the formula (here A1 and B1 are cells names in this spreadsheet)
-- {"value": "2+2"} if you want to evaluate numbers and not cells
+  Here are examples of requests (it might be any mathematical expression, including +-*/ and ()):
+  - {"value": "1"}
+  - {"value": "=A1+B1"} if you want to evaluate the formula (here A1 and B1 are cells names in this spreadsheet)
+  - {"value": "=2+2"} if you want to evaluate numbers and not cells
 
 2. GET /api/v1/:sheet_id/:cell_id: Retrieves data from a specified cell, returning a 200 status if the data is present and a 404 status if it's missing.
 
